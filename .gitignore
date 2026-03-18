@@ -1,0 +1,34 @@
+# Cloned/generated content (per README)
+core/
+server/
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
+venv/
+panel/venv/
+.env
+.env.*
+*.egg-info/
+*.egg
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vmangos-ondemand</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      }}}
+    };
+  </script>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-slate-900 border-b border-slate-800 px-6 py-4">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <h1 class="text-xl font-bold text-white">vmangos-ondemand</h1>
+      <div id="docker-status" class="flex items-center gap-2 text-sm text-slate-400">
+        <span class="dot dot-gray"></span>
+        <span>Checking Docker...</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-6 space-y-6">
+
+    <!-- Services -->
+    <section>
+      <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Services</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        <div class="bg-slate-900 rounded-lg border border-slate-800 p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2"><span id="db-dot" class="dot dot-gray"></span><h3 class="font-semibold text-white">Database</h3></div>
+            <span id="db-state" class="text-xs text-slate-500 font-mono">unknown</span>
+          </div>
+          <p id="db-detail" class="text-xs text-slate-500 mb-4 h-4">MariaDB 10.11</p>
+          <div class="flex gap-2">
+            <button onclick="action('start-db')" class="btn btn-sm bg-slate-800 hover:bg-slate-700 text-slate-300">Start</button>
+            <button onclick="action('stop-db')" class="btn btn-sm bg-slate-800 hover:bg-slate-700 text-slate-300">Stop</button>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 rounded-lg border border-slate-800 p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2"><span id="mangosd-dot" class="dot dot-gray"></span><h3 class="font-semibold text-white">World Server</h3></div>
+            <span id="mangosd-state" class="text-xs text-slate-500 font-mono">unknown</span>
+          </div>
+          <p id="mangosd-detail" class="text-xs text-slate-500 mb-2 h-4">mangosd :8085</p>
+          <p class="text-xs text-slate-500 mb-4">
+            <span class="text-slate-400">Client realmlist:</span><br>
+            {% if realm_host %}
+            <span class="font-mono text-slate-300">set realmlist {{ realm_host }}</span>
+            {% if realm_host in ('127.0.0.1', 'localhost') %}
+            (same machine)
+            {% else %}
+            (LAN — from how you opened this page)<br>
+            <span class="text-slate-500">Or</span> <span class="font-mono text-slate-300">set realmlist 127.0.0.1</span> if WoW runs on the server
+            {% endif %}
+            {% else %}
+            <span class="font-mono text-slate-300">set realmlist 127.0.0.1</span> (same machine)<br>
+            <span class="font-mono text-slate-300">set realmlist &lt;host-ip&gt;</span> (LAN)
+            {% endif %}
+          </p>
+          <div class="flex gap-2">
+            <button onclick="action('start-mangosd')" class="btn btn-sm bg-slate-800 hover:bg-slate-700 text-slate-300">Start</button>
+            <button onclick="action('stop-mangosd')" class="btn btn-sm bg-slate-800 hover:bg-slate-700 text-slate-300">Stop</button>
+            <button onclick="action('restart-mangosd')" class="btn btn-sm bg-slate-800 hover:bg-slate-700 text-slate-300">Restart</button>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 rounded-lg border border-slate-800 p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2"><span id="realmd-dot" class="dot dot-gray"></span><h3 class="font-semibold text-white">Login Server</h3></div>
+            <span id="realmd-state" class="text-xs text-slate-500 font-mono">unknown</span>
+          </div>
+          <p id="realmd-detail" class="text-xs text-slate-500 mb-4 h-4">realmd :3724</p>
+          <div class="flex gap-2">
+            <button onclick="action('start-realmd')" class="btn btn-sm bg-slate-800 hover:bg-slate-700 text-slate-300">Start</button>
+            <button onclick="action('stop-realmd')" class="btn btn-sm bg-slate-800 hover:bg-slate-700 text-slate-300">Stop</button>
+            <button onclick="action('restart-realmd')" class="btn btn-sm bg-slate-800 hover:bg-slate-700 text-slate-300">Restart</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Build & Setup -->
+    <section>
+      <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Build &amp; Setup</h2>
+      <div class="bg-slate-900 rounded-lg border border-slate-800 p-5 space-y-4">
+        <div class="flex flex-wrap items-center gap-4">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Client Build (for compile &amp; extract)</label>
+            <select id="client-build" class="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+              <optgroup label="1.12.x">
+                <option value="5875" selected>5875 (1.12.1)</option>
+                <option value="6005">6005 (1.12.2)</option>
+                <option value="6141">6141 (1.12.3)</option>
+                <option value="5606">5606 (1.12.0)</option>
+              </optgroup>
+              <optgroup label="Older patches">
+                <option value="5464">5464 (1.11.2)</option>
+                <option value="5302">5302 (1.10.2)</option>
+                <option value="5086">5086 (1.9.4)</option>
+                <option value="4878">4878 (1.8.4)</option>
+                <option value="4695">4695 (1.7.1)</option>
+                <option value="4544">4544 (1.6.1)</option>
+                <option value="4449">4449 (1.5.1)</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="flex flex-wrap gap-3">
+          <button id="btn-clone"  onclick="action('clone-core')"  class="btn bg-violet-600 hover:bg-violet-500 text-white font-medium">Clone Core</button>
+          <button id="btn-update" onclick="action('update-core')" class="btn bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium hidden">Update Core</button>
+          <span class="w-px h-6 bg-slate-700"></span>
+          <button onclick="action('build-image')" class="btn bg-blue-600 hover:bg-blue-500 text-white font-medium">Build Docker Image</button>
+          <button onclick="action('compile')"     class="btn bg-indigo-600 hover:bg-indigo-500 text-white font-medium">Compile Server</button>
+          <button onclick="action('compile-extractors')" class="btn bg-slate-600 hover:bg-slate-500 text-slate-200 font-medium" title="Required once before extracting client data">Compile Extractors</button>
+          <button onclick="action('import-db')"   class="btn bg-emerald-600 hover:bg-emerald-500 text-white font-medium">Import Latest DB</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Accounts -->
+    <section>
+      <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Accounts</h2>
+      <div class="bg-slate-900 rounded-lg border border-slate-800 p-5 space-y-4">
+
+        <!-- Create form -->
+        <div class="flex flex-wrap items-end gap-3">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Username</label>
+            <input id="new-username" type="text" placeholder="PLAYERNAME" maxlength="32" autocomplete="off"
+              class="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono w-40">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Password</label>
+            <input id="new-password" type="password" placeholder="••••••••" autocomplete="new-password"
+              class="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-40">
+          </div>
+          <button onclick="createAccount()" class="btn bg-emerald-600 hover:bg-emerald-500 text-white font-medium">Create Account</button>
+          <span class="w-px h-6 bg-slate-700 self-end mb-2"></span>
+          <button onclick="loadAccounts()" class="btn bg-slate-700 hover:bg-slate-600 text-slate-200">Refresh List</button>
+        </div>
+
+        <div id="account-msg" class="hidden text-xs rounded-md px-3 py-2 border"></div>
+
+        <!-- Account table -->
+        <div id="accounts-wrap">
+          <p class="text-xs text-slate-500">Click <strong class="text-slate-400">Refresh List</strong> to load accounts.</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Data Extraction -->
+    <section>
+      <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Client Data Extraction</h2>
+      <div class="bg-slate-900 rounded-lg border border-slate-800 p-5 space-y-4">
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">WoW Client Directory</label>
+          <input id="client-path" type="text" placeholder="/path/to/WoW (absolute path on this machine)"
+            class="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono">
+          <p class="text-xs text-slate-500 mt-1">Build from above must match your client</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button onclick="extract('maps')"  class="btn bg-amber-600 hover:bg-amber-500 text-white font-medium">Maps &amp; DBC</button>
+          <button onclick="extract('vmaps')" class="btn bg-amber-600 hover:bg-amber-500 text-white font-medium">VMaps</button>
+          <button onclick="extract('mmaps')" class="btn bg-orange-600 hover:bg-orange-500 text-white font-medium" title="Takes several hours">Movement Maps (slow)</button>
+          <button onclick="extract('all')"   class="btn bg-red-600 hover:bg-red-500 text-white font-medium" title="All steps sequentially">Extract All</button>
+        </div>
+        <p class="text-xs text-slate-500">Maps + VMaps are required. Movement maps are optional but improve NPC pathfinding (takes hours).</p>
+      </div>
+    </section>
+
+    <!-- Console -->
+    <section>
+      <div class="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
+        <div class="flex items-center border-b border-slate-800 bg-slate-900/50">
+          <button onclick="switchTab('tasks')"   id="tab-tasks"   class="console-tab px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent">Task Output</button>
+          <button onclick="switchTab('mangosd')" id="tab-mangosd" class="console-tab px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent">mangosd</button>
+          <button onclick="switchTab('realmd')"  id="tab-realmd"  class="console-tab px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent">realmd</button>
+          <button onclick="switchTab('db')"      id="tab-db"      class="console-tab px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent">database</button>
+          <div class="flex-1"></div>
+          <button onclick="clearConsole()" class="px-3 py-2 text-xs text-slate-500 hover:text-slate-300 cursor-pointer">Clear</button>
+        </div>
+        <div id="console-output" class="console-output bg-slate-950 p-4 h-96 overflow-y-auto text-xs text-slate-300"></div>
+        <div class="px-4 py-1.5 bg-slate-900/50 border-t border-slate-800 text-xs text-slate-500 flex justify-between items-center">
+          <span id="console-task-name">Idle</span>
+          <span id="console-attach-cmd" class="font-mono text-slate-400 hidden flex-1 text-center"></span>
+          <span id="console-line-count">0 lines</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="/static/app.js"></script>
+
+  <!-- Edit Account Modal -->
+  <div id="account-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+       onclick="if(event.target===this)closeModal()">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-sm space-y-4 shadow-2xl mx-4">
+      <h3 class="font-semibold text-white text-base">
+        Edit: <span id="modal-display-name" class="font-mono text-blue-400"></span>
+      </h3>
+      <input type="hidden" id="modal-username">
+
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">
+          New Password <span class="text-slate-600">(leave blank to keep current)</span>
+        </label>
+        <input id="modal-password" type="password" placeholder="New password" autocomplete="new-password"
+          class="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+      </div>
+
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">GM Level</label>
+        <select id="modal-gmlevel"
+          class="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+          <option value="0">0 — Player</option>
+          <option value="1">1 — GM (basic)</option>
+          <option value="2">2 — GM (advanced)</option>
+          <option value="3">3 — GM (senior)</option>
+          <option value="4">4 — Administrator</option>
+        </select>
+      </div>
+
+      <div id="modal-error" class="hidden text-xs text-red-300 bg-red-950/60 border border-red-800/50 rounded-md px-3 py-2"></div>
+
+      <div class="flex gap-3 pt-1">
+        <button onclick="saveAccount()" class="btn flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium">Save Changes</button>
+        <button onclick="closeModal()" class="btn flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200">Cancel</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

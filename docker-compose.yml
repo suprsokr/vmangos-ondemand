@@ -1,0 +1,81 @@
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: mangos
+    command: >-
+      --max-allowed-packet=128M
+      --character-set-server=utf8
+      --collation-server=utf8_general_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-uroot", "-pmangos"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  build:
+    build: .
+    volumes:
+      - ./core:/vmangos/core
+      - ./server:/vmangos/server
+      - build-cache:/vmangos/build
+    command: /vmangos/scripts/build.sh
+
+  db-import:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: "3306"
+      MYSQL_USER: root
+      MYSQL_PWD: mangos
+    command: /vmangos/scripts/init-db.sh
+
+  mangosd:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./server:/vmangos/server
+      - ./data:/vmangos/data
+    ports:
+      - "8085:8085"
+    working_dir: /vmangos/data
+    command: /vmangos/server/bin/mangosd -c /vmangos/server/etc/mangosd.conf
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+  realmd:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./server:/vmangos/server
+    ports:
+      - "3724:3724"
+    command: /vmangos/server/bin/realmd -c /vmangos/server/etc/realmd.conf
+    restart: unless-stopped
+
+  extract:
+    build: .
+    volumes:
+      - ./core:/vmangos/core
+      - ./server:/vmangos/server
+      - ./scripts:/vmangos/scripts:ro
+      - build-cache:/vmangos/build
+      - ./data:/vmangos/data
+    command: /vmangos/scripts/extract.sh
+
+volumes:
+  mysql-data:
+  build-cache:

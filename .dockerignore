@@ -1,0 +1,10 @@
+WoW/
+core/
+server/
+data/
+build/
+panel/
+.git/
+*.tar.gz
+*.zip
+*.7z
