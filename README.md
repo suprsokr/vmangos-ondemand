@@ -4,6 +4,8 @@ One-command development environment for [VMaNGOS](https://github.com/vmangos/cor
 
 A web control panel that handles cloning, compiling, database setup, client data extraction, and server management — all running in Docker on Ubuntu 24.04 LTS.
 
+![vmangos-ondemand control panel](screenshot.png)
+
 ## Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine + Compose)
